@@ -43,82 +43,130 @@ vendo_machine = {
     }
 }
 
-# inserting the menu into the table
+# inserting the menu into a table
 
 # creating the table
-def create_combined_table(data):
+def vendo_table(data):
     table = Table()
-    table.add_column ("Category", style = "white")
-    table.add_column ("Number", style = "blue")
-    table.add_column ("Item", style = "magenta")
-    table.add_column ("Price", style = "red")
-    table.add_column ("Stocks", style = "green")
+    table.add_column("Category", style="white")
+    table.add_column("Number", style="blue")
+    table.add_column("Item", style="magenta")
+    table.add_column("Price", style="red")
+    table.add_column("Stocks", style="green")
 
 # inserting the items into the table
     for category, items in data.items():
         for key, item in items.items():
-            table.add_row (category, key, item ['name'], str(item['price']), str(item['stocks']))
+            table.add_row(category, key, item['name'], str(item['price']), str(item['stocks']))
 
     return table
 
-console.print(create_combined_table(vendo_machine))
-
-
 # defining buy function: allows the user to purchase items 
 
-def buy (category, item_number,name, money):
-    item = vendo_machine [category][item_number]
+def buy(category, item_number, name, money):
+    item = vendo_machine[category][item_number]
 
-# if statements when buying an item and the message after
-    if money >= item ['price'] and item ['stocks'] > 0:
+    # using if statement to decrease the balance and stock after purchasing
+    if money >= item['price'] and item['stocks'] > 0:
         item['stocks'] -= 1
-        change = money - item ['price']
-        console.print (f'Purchased: {item[name]}. Your remaining balance is {change:.2f}')
-    elif money < item ['price']:
-        console.print ("Insufficient funds")
+        change = money - item['price']
+        console.print(f'Purchased: {item[name]}. Your remaining balance is {change:.2f}')
+        display_stock(item_number)
+        return change
+    
+    # elif statement to give the option to add more money if the user has insufficient balance
+    elif money < item['price']:
+        choice = input("Insufficient funds. Do you want to add more money (YES/NO)? ").upper()
+        if choice == 'YES':
+            money_added = add_money(0)
+            return buy(category, item_number, name, money + money_added)
+        else:
+            console.print("Transaction canceled due to insufficient funds.")
     elif item['stocks'] <= 0:
-        console.print ("Out of stock!")
+        console.print("Out of stock!")
     else:
         console.print("Invalid.")
 
-# defining add_money function: allows the user to add money to the balance
 
+# defining add_money function: allows the user to add money to the balance
+        
 def add_money(balance):
     while True:
-        amount = input("Insert money! (q to quit):")
-        if amount.lower() == 'q':
-            break 
+        try:
+            amount = input("Insert money! (q to quit): ")
+            if amount.lower() == 'q':
+                console.print("Transaction canceled. Have a nice day!")
+                return None
 
 # allows user to add money when the balance is insufficient
-        amount = float(amount)
-        if amount < 0:
-            console.print ("Your remaining balance is 0, insert money! (enter q to quit)")
-            continue
+            amount = float(amount)
+            if amount < 0:
+                console.print("Please enter a positive amount.")
+                continue
 
-        balance += amount
-        console.print (f'Added AED{amount:.2f}. Your current balance is AED {balance:.2f}!')
-        
-print ("Thank you for using, have a nice day!")
+            balance += amount
+            console.print(f"Added AED {amount:.2f}. Your current balance is AED {balance:.2f}!")
+            return balance
 
-console.print(create_combined_table(vendo_machine))
+        except ValueError:
+            console.print("Invalid input. Please enter a valid amount or 'q' to quit.")
 
-# definfing the function using_vendo_machine: allows the user to choose the item they want to buy
+# defining the continue_shopping function: allows the user to continue buying items
+
+def continue_shopping():
+
+    # using while loop to ask the question
+    while True:
+        choice = input("Do you want to buy more items (YES/NO)? ").upper()
+        if choice == 'YES':
+            using_vendo_machine()
+            break
+        elif choice == 'NO':
+            console.print("Thank you for using our vending machine! Have a nice day!")
+            break
+        else:
+            console.print("Invalid choice. Please enter YES or NO.")
+
+
+# # defining the using_vendo_machine function: allows the user to choose the item they want to buy
 
 def using_vendo_machine():
+    global balance
 
-# while loop to ask the question on what item to buy
+    # while loop to ask the question on what item to buy
     while True:
-        category = input ("Enter what you'd like to purchase! (drinks/chips/snacks):")
-        item_number = input ("Enter item number:")
-        if category in vendo_machine and item_number in vendo_machine[category]:
-            break
-    console.print ("Invalid! Please try again.")
+        category = input("Enter what you'd like to purchase! (drinks/chips/snacks): ").capitalize()
+        item_number = input(f"Enter {category} item number: ").upper()
     
-    return buy (category, item_number, 'name', balance)
+        # if statements when the balance is 0 or insufficient
+        if category in vendo_machine and item_number in vendo_machine[category]:
+            balance = buy(category, item_number, 'name', balance)
+            if balance is not None and balance > 0:
+                continue_shopping()
+                break
+            else:
+                console.print("Insufficient funds. Cannot proceed further.")
+                break
+        else:
+            console.print("Invalid category or item number. Please try again.")
 
-# user's balance
-balance = add_money (balance)
 
+# defining the display_stock function: allows the users to see how many stocks the item has left after purchasing
 
+def display_stock(item_number):
+    for category in vendo_machine.values():
+        for item_key, item_value in category.items():
+            if item_key == item_number:
+                console.print(f"Remaining stocks for {item_value['name']} is {item_value['stocks']}")
 
+# messages
 
+console.print("Thank you for using! Have a nice day!")
+console.print("Available items:")
+console.print(vendo_table(vendo_machine))
+
+# flow of the program
+
+balance = add_money(balance)
+if balance is not None and balance > 0:
+    using_vendo_machine()
